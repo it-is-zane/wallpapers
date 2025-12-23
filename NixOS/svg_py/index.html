@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<title>show image</title>
+		<script>
+			fetch("python.svg").then(res => res.blob()).then(image => {
+				canvas = document.getElementById("view");
+				context = canvas.getContext("2d");
+				download_link = document.getElementById("download");
+
+				img = new Image();
+				img.onload = () => {
+					canvas.width = img.width;
+					canvas.height = img.height;
+					context.drawImage(img, 0, 0);
+
+					download_link.href = canvas.toDataURL("image/avif", 1.0);
+				};
+
+				img.src = URL.createObjectURL(image);
+			});
+		</script>
+	</head>
+	<body>
+		<canvas id="view"></canvas>
+		<a id="download">download</a>
+	</body>
+</html>
