@@ -97,7 +97,6 @@ nix_lambda = array([
     forward_tip
 ])
 
-svg = open("python.svg", "w")
 
 
 background = f"""
@@ -195,4 +194,5 @@ data = f"""
     </svg>
 """
 
-svg.write(data)
+with open("python.svg", "w") as svg:
+    svg.write(data)
