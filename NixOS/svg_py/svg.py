@@ -1,6 +1,5 @@
 from math import tau, e
 from numpy import array, pow, sqrt, cbrt, sin, cos
-from numpy.linalg import norm
 from random import random
 
 phi = ((1 + sqrt(5)) / 2)
@@ -13,7 +12,7 @@ def distribute_disc(n):
 
 class Image:
     scale = (2560 + 1440j)
-    icon_scale = scale.imag / 2
+    icon_scale = scale.imag / 4
     center = scale / 2
 
 class Colors:
@@ -23,7 +22,6 @@ class Colors:
 def oklch_to_oklab(c):
     (l, c, h) = c
     return (l, c * cos(h), c * sin(h))
-
 
 # https://bottosson.github.io/posts/oklab/
 def linear_srgb_to_oklab(c):
@@ -71,19 +69,22 @@ def oklch_to_rgb(c):
     (r, g, b) = linear_srgb_to_srgb(oklab_to_linear_srgb(oklch_to_oklab(c)))
     return (r * 256, g * 256, b * 256)
 
-
-hexagon = pow(e, array([-i / 6 for i in range(6)]) * 1j * tau) * 0.5
-
 # https://brand.nixos.org/documents/nixos-branding-guide.pdf
-upper_apex = hexagon[2] + 0.125 * (hexagon[2] - hexagon[3]) / norm(hexagon[2] - hexagon[3]) + 0.0625 * (hexagon[5] - hexagon[2]) / norm(hexagon[5] - hexagon[2]) 
-upper_notch = hexagon[2] + 0.125 * (hexagon[3] - hexagon[2]) / norm(hexagon[3] - hexagon[2]) + 0.0625 * (hexagon[5] - hexagon[2]) / norm(hexagon[5] - hexagon[2])
-midpoint_join = -0.125+0j
-rear_notch = hexagon[4] + 0.125 * (hexagon[3] - hexagon[4]) / norm(hexagon[3] - hexagon[4])
+THICKNESS = (1 / 4)
+GAP = (1 / 16) # it is listed as 1 / 32 in the guide but 1 / 16 looks correct
+RADIUS = (1)
+
+hexagon = pow(e, array([-i / 6 for i in range(6)]) * 1j * tau)
+
+upper_apex = hexagon[2] * RADIUS + hexagon[1] * THICKNESS + hexagon[5] * GAP
+upper_notch = hexagon[2] * RADIUS - hexagon[1] * THICKNESS + hexagon[5] * GAP
+midpoint_join = -THICKNESS
+rear_notch = hexagon[4] * RADIUS + hexagon[2] * THICKNESS
 rear_foot = hexagon[4]
-rear_heal = hexagon[4] + 0.125
-joint_crotch = midpoint_join + 0.25 * (hexagon[4] - hexagon[3]) / norm(hexagon[4] - hexagon[3])
-forward_heel = hexagon[5] - 0.125
-forward_tip = hexagon[5] + 0.125
+rear_heal = hexagon[4] + THICKNESS
+joint_crotch = midpoint_join + hexagon[5] * 2 * THICKNESS
+forward_heel = hexagon[5] - THICKNESS
+forward_tip = hexagon[5] + THICKNESS
 
 nix_lambda = array([
     upper_apex,
@@ -96,8 +97,6 @@ nix_lambda = array([
     forward_heel,
     forward_tip
 ])
-
-
 
 background = f"""
     <rect width="{
@@ -117,7 +116,7 @@ circle = f"""
     }" cy="{
         Image.center.imag
     }" r="{
-        Image.icon_scale / 2
+        Image.icon_scale
     }" />
 """
 
@@ -146,7 +145,7 @@ for i in range(6):
 
     nix_logo += f"""
         <polygon fill="{color}" points="{
-            ''.join([f"{c.real},{c.imag} " for c in (logo * Image.icon_scale + Image.center)])
+            ''.join([f"{c.real},{c.imag} " for c in (logo * (4 / 9) * Image.icon_scale + Image.center)])
         }" />
     """
 
@@ -159,7 +158,7 @@ for p in distribute_disc(2500) * abs(Image.scale) / 2:
         or p.real < -bounds.real
         or p.imag > bounds.imag
         or p.imag < -bounds.imag
-        or abs(p) < Image.icon_scale / 1.7
+        or abs(p) < Image.icon_scale
     ):
         continue
     
@@ -179,7 +178,6 @@ for p in distribute_disc(2500) * abs(Image.scale) / 2:
             ''.join([f"{c.real},{c.imag} " for c in points])
         }" />
     """
-    
 
 data = f"""
     <svg
