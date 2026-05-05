@@ -1,6 +1,7 @@
 from math import tau, e
-from numpy import array, pow, sqrt, cbrt, sin, cos
+from numpy import array, pow, sqrt, isnan
 from random import random
+import Okhsv
 
 phi = ((1 + sqrt(5)) / 2)
 
@@ -19,55 +20,6 @@ class Colors:
     bg = "black"
     debug = "white"
 
-def oklch_to_oklab(c):
-    (l, c, h) = c
-    return (l, c * cos(h), c * sin(h))
-
-# https://bottosson.github.io/posts/oklab/
-def linear_srgb_to_oklab(c):
-    (r, g, b) = c
-    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
-    l_ = cbrt(l)
-    m_ = cbrt(m)
-    s_ = cbrt(s)
-    return (
-        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
-        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
-        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
-    )
-
-# https://bottosson.github.io/posts/oklab/
-def oklab_to_linear_srgb(c):
-    (L, a, b) = c
-    l_ = L + 0.3963377774 * a + 0.2158037573 * b
-    m_ = L - 0.1055613458 * a - 0.0638541728 * b
-    s_ = L - 0.0894841775 * a - 1.2914855480 * b
-    l = l_*l_*l_
-    m = m_*m_*m_
-    s = s_*s_*s_
-    return (
-		+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-		-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-		-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
-	)
-
-# https://entropymine.com/imageworsener/srgbformula/
-def linear_srgb_to_srgb(c):
-    (r, g, b) = c
-
-    def f(L):
-        if L <= 0.00313066844250063:
-            return L * 12.92 
-        else:
-            return 1.055 * pow(L, 1 / 2.4) - 0.055
-
-    return (f(r), f(g), f(b))
-            
-def oklch_to_rgb(c):
-    (r, g, b) = linear_srgb_to_srgb(oklab_to_linear_srgb(oklch_to_oklab(c)))
-    return (r * 256, g * 256, b * 256)
 
 # https://brand.nixos.org/documents/nixos-branding-guide.pdf
 THICKNESS = (1 / 4)
@@ -158,25 +110,37 @@ for p in distribute_disc(2500) * abs(Image.scale) / 2:
         or p.real < -bounds.real
         or p.imag > bounds.imag
         or p.imag < -bounds.imag
-        or abs(p) < Image.icon_scale
+        or abs(p) < Image.icon_scale * 0.1
     ):
         continue
     
     points = (
         nix_lambda
-        * Image.icon_scale / 25
+        * Image.icon_scale / 32
         * pow(e, random() * 1j * tau)
         + p
     ) + Image.center
 
-    (r, g, b) = oklch_to_rgb((
-        random() * 0.25 + 0.1, 0.1, random() * 360
-    ))
-    
+    # print(colour.COLOURSPACE_MODELS)
+    # Oklch (0-1, 0-0.4, 1.0) yeah the ranges are weird
+    # srgb (0-1, 0-1, 1.0)
+    rgb = Okhsv.okhsv_to_srgb(array((
+        random(), 1, abs(p / abs(Image.scale) * 2) 
+    ))) * 255
+
+    r, g, b = (0,0,0) if isnan(rgb).any() else rgb
+
     little_lambdas += f"""
-        <polygon fill="rgb({round(r)} {round(g)} {round(b)})" points="{
-            ''.join([f"{c.real},{c.imag} " for c in points])
-        }" />
+        <polygon
+            {
+                #stroke="rgb({r2} {g2} {b2})"
+                ""
+            }
+            fill="rgb({round(r)} {round(g)} {round(b)})"
+            points="{
+                ''.join([f"{c.real},{c.imag} " for c in points])
+            }"
+        />
     """
 
 data = f"""
