@@ -17,7 +17,7 @@
     {
       devShells.${system}.default = pkgs.mkShell {
         shellHook = ''
-          exec fish --init-command "alias svg='python svg.py && kitten icat python.svg'"
+          exec fish --init-command "alias svg='python main.py && kitten icat *.svg'; alias share='python -m http.server 8000'"
         '';
 
         packages = with pkgs; [
